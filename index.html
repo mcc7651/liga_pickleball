@@ -36,7 +36,7 @@
                     <button @click="exportData" class="px-4 py-2 bg-emerald-800/60 hover:bg-emerald-800 rounded-xl text-xs font-semibold backdrop-blur transition flex items-center gap-2">
                         <i class="fa-solid fa-download"></i> Exportar Datos
                     </button>
-                    <button @click="resetAllData" class="px-4 py-2 bg-rose-600/80 hover:bg-rose-700 rounded-xl text-xs font-semibold transition flex items-center gap-2">
+                    <button @click="confirmResetAllData" class="px-4 py-2 bg-rose-600/80 hover:bg-rose-700 rounded-xl text-xs font-semibold transition flex items-center gap-2">
                         <i class="fa-solid fa-rotate-left"></i> Reiniciar Liga
                     </button>
                 </div>
@@ -305,8 +305,8 @@
                             <h3 class="font-bold text-emerald-800 mb-2 flex items-center gap-2"><i class="fa-solid fa-trophy"></i> Formato y Puntuación</h3>
                             <ul class="list-disc pl-5 space-y-1 text-xs">
                                 <li>Los partidos se disputan al mejor de 3 sets.</li>
-                                <li><strong>Sets 1 y 2:</strong> Se juegan a 21 puntos con punto de oro a los 23 (ejemplo: 23-22 gana set).</li>
-                                <li><strong>Set 3 (Desempate):</strong> En caso de 1-1, se juega a 15 puntos con punto de oro a los 17 (ejemplo: 17-16 gana set).</li>
+                                <li><strong>Sets 1 y 2:</strong> Se juegan a 21 puntos (con ventaja de 2) y, si se llega a 23-23, se juega <strong>punto de oro</strong> siendo el resultado final <strong>24-23</strong>.</li>
+                                <li><strong>Set 3 (Desempate):</strong> En caso de 1-1, se juega a 15 puntos (con ventaja de 2) y, si se llega a 15-15, se juega punto de oro siendo el resultado final <strong>16-15</strong>.</li>
                                 <li><strong>Victoria 2-0:</strong> El ganador obtiene <strong>3 puntos</strong>, el perdedor 0.</li>
                                 <li><strong>Victoria 2-1:</strong> El ganador obtiene <strong>2 puntos</strong>, el perdedor <strong>1 punto</strong>.</li>
                             </ul>
@@ -326,7 +326,7 @@
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
                             <h3 class="font-bold text-emerald-800 mb-2 flex items-center gap-2"><i class="fa-solid fa-calendar-check"></i> Calendario y Aplazamientos</h3>
                             <p class="text-xs leading-relaxed">
-                                Un partido se podrá jugar en la <strong>semana anterior o posterior</strong> a la fecha oficialmente establecida, previo acuerdo entre los dos equipos concernidos y comunicación clara a un miembro de la directiva (Presidente o Secretario).
+                                Un partido se podrá jugar en la <strong>semana anterior o posterior</strong> a la fecha oficialmente establecida, previo acuerdo entre los dos equipos concernidos y aceptación de la directiva que lo confirmará con su publicación en la web.
                             </p>
                         </div>
 
@@ -334,6 +334,13 @@
                             <h3 class="font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-gavel"></i> Disputas y Decisiones Inapelables</h3>
                             <p class="text-xs leading-relaxed">
                                 Ante cualquier disputa o desacuerdo que pueda producirse a lo largo de la competición, será la <strong>Junta Directiva</strong> (Presidente y Secretario) la encargada de resolver <strong>sin derecho a apelación ninguna</strong>.
+                            </p>
+                        </div>
+
+                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-emerald-950">
+                            <h3 class="font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-link"></i> Difusión y Enlace Oficial</h3>
+                            <p class="text-xs leading-relaxed">
+                                Todos los jugadores y equipos participantes deben recibir el enlace de la página web oficial del torneo para consultar la clasificación, el calendario, las actas de partidos y las confirmaciones de la directiva.
                             </p>
                         </div>
                     </div>
@@ -345,14 +352,22 @@
                         <i class="fa-solid fa-utensils text-emerald-600"></i> Cena de Confraternidad y Reparto de Factura
                     </h3>
                     
-                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-xs text-emerald-900 mb-4">
-                        <p class="mb-2"><strong>Menú Oficial Obligatorio:</strong> Incluye bebida, un mínimo de 2 mariscos, plato principal y postre.</p>
-                        <p><strong>Regla de Pago:</strong> La cena será sufragada por todos los equipos <u>excepto los 3 primeros clasificados</u>, que cenarán gratis. El importe restante se distribuye de forma <strong>inversamente proporcional</strong> a los puntos conseguidos en la liga.</p>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-xs text-emerald-900 mb-4 space-y-1.5">
+                        <p><strong>Menú Oficial Obligatorio:</strong> Incluye bebida, un mínimo de 2 mariscos, plato principal y postre.</p>
+                        <p><strong>Top 3 (Puestos 1º al 3º):</strong> Cenan gratis, cubiertos por los 3 últimos clasificados.</p>
+                        <p><strong>3 Últimos (Puestos 14º al 16º):</strong> Asumen el coste de su propia cena más el de los 3 primeros clasificados (6 cubiertos en total repartidos entre los 3 últimos).</p>
+                        <p><strong>10 Equipos Intermedios (Puestos 4º al 13º):</strong> Se reparten el resto del importe de la cena de forma proporcional a su posición mediante un desglose porcentual asignado del 4º al 13º puesto.</p>
                     </div>
 
-                    <div class="flex items-center gap-3 mb-4">
-                        <label class="text-xs font-bold text-slate-700">Coste Total de la Factura (€):</label>
-                        <input v-model.number="dinnerCost" @change="saveData" type="number" class="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <div class="flex flex-wrap items-center gap-4 mb-4">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-bold text-slate-700">Coste Total de la Factura (€):</label>
+                            <input v-model.number="dinnerCost" @change="saveData" type="number" min="0" step="0.01" class="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-bold text-slate-700">Precio por Cubierto / Menú (€):</label>
+                            <input v-model.number="menuPrice" @change="saveData" type="number" min="0" step="0.01" class="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
                     </div>
 
                     <div class="overflow-x-auto border border-slate-200 rounded-xl">
@@ -362,18 +377,23 @@
                                     <th class="p-2 text-center">Pos</th>
                                     <th class="p-2">Equipo</th>
                                     <th class="p-2 text-center">Puntos</th>
-                                    <th class="p-2 text-center">Estado Pago</th>
+                                    <th class="p-2 text-center">Tramo / Estado</th>
+                                    <th class="p-2 text-right">% del Grupo</th>
                                     <th class="p-2 text-right">Cuota Estimada (€)</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                <tr v-for="item in dinnerCalculations" :key="item.rank" :class="item.isFree ? 'bg-emerald-100/50 font-bold' : ''">
+                                <tr v-for="item in dinnerCalculations" :key="item.rank" :class="item.isFree ? 'bg-emerald-100/50 font-bold' : (item.isBottomThree ? 'bg-amber-50/60' : '')">
                                     <td class="p-2 text-center">{{ item.rank }}º</td>
                                     <td class="p-2">{{ item.name }}</td>
                                     <td class="p-2 text-center font-semibold">{{ item.points }}</td>
                                     <td class="p-2 text-center">
-                                        <span v-if="item.isFree" class="px-2 py-0.5 bg-emerald-600 text-white rounded-full font-bold">GRATIS 🎉</span>
-                                        <span v-else class="text-slate-600">De pago</span>
+                                        <span v-if="item.isFree" class="px-2 py-0.5 bg-emerald-600 text-white rounded-full font-bold">GRATIS (Top 3) 🎉</span>
+                                        <span v-else-if="item.isBottomThree" class="px-2 py-0.5 bg-amber-600 text-white rounded-full font-bold">Propio + Top 3</span>
+                                        <span v-else class="text-slate-600 font-medium">Tramo medio (pos. {{ item.rank }}º)</span>
+                                    </td>
+                                    <td class="p-2 text-right font-semibold text-slate-600">
+                                        {{ item.sharePercent !== null ? item.sharePercent.toFixed(1) + '%' : '—' }}
                                     </td>
                                     <td class="p-2 text-right font-bold text-slate-800">
                                         {{ item.isFree ? '0.00 €' : item.cost.toFixed(2) + ' €' }}
@@ -400,6 +420,11 @@
                         <input v-model="editingMatch.week" type="text" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
 
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Memo (cambio de fecha / confirmación directiva):</label>
+                        <textarea v-model="editingMatch.memo" rows="2" placeholder="Indica aquí si el partido se adelanta o atrasa de semana y la confirmación de la directiva..." class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                    </div>
+
                     <div class="bg-slate-50 p-3 rounded-xl space-y-2 text-xs">
                         <div class="flex justify-between font-bold text-slate-800 border-b border-slate-200 pb-1">
                             <span>Equipos</span>
@@ -409,15 +434,15 @@
                         </div>
                         <div class="flex justify-between items-center gap-2">
                             <span class="font-semibold text-slate-700 truncate w-32">{{ getTeamName(editingMatch.homeId) }}</span>
-                            <input v-model.number="editingMatch.homeSet1" type="number" min="0" max="23" class="w-14 text-center border rounded p-1 font-bold">
-                            <input v-model.number="editingMatch.homeSet2" type="number" min="0" max="23" class="w-14 text-center border rounded p-1 font-bold">
-                            <input v-model.number="editingMatch.homeSet3" type="number" min="0" max="17" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(editingMatch)">
+                            <input v-model.number="editingMatch.homeSet1" type="number" min="0" max="24" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="editingMatch.homeSet2" type="number" min="0" max="24" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="editingMatch.homeSet3" type="number" min="0" max="16" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(editingMatch)">
                         </div>
                         <div class="flex justify-between items-center gap-2">
                             <span class="font-semibold text-slate-700 truncate w-32">{{ getTeamName(editingMatch.awayId) }}</span>
-                            <input v-model.number="editingMatch.awaySet1" type="number" min="0" max="23" class="w-14 text-center border rounded p-1 font-bold">
-                            <input v-model.number="editingMatch.awaySet2" type="number" min="0" max="23" class="w-14 text-center border rounded p-1 font-bold">
-                            <input v-model.number="editingMatch.awaySet3" type="number" min="0" max="17" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(editingMatch)">
+                            <input v-model.number="editingMatch.awaySet1" type="number" min="0" max="24" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="editingMatch.awaySet2" type="number" min="0" max="24" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="editingMatch.awaySet3" type="number" min="0" max="16" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(editingMatch)">
                         </div>
                     </div>
                 </div>
@@ -430,6 +455,65 @@
                         Borrar
                     </button>
                     <button @click="closeEditMatchModal" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUICK MATCH MODAL (From Matrix) -->
+        <div v-if="quickMatchModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-800 text-base">Partido: Jornada {{ quickMatchData.match ? quickMatchData.match.round : '' }}</h3>
+                    <button @click="quickMatchModal = false" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+                </div>
+
+                <div v-if="quickMatchData.match" class="space-y-3">
+                    <div class="text-xs text-slate-500 font-medium">
+                        Local: <strong>{{ getTeamName(quickMatchData.homeId) }}</strong> vs Visitante: <strong>{{ getTeamName(quickMatchData.awayId) }}</strong>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Semana de juego:</label>
+                        <input v-model="quickMatchData.match.week" type="text" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Memo (cambio de fecha / confirmación directiva):</label>
+                        <textarea v-model="quickMatchData.match.memo" rows="2" placeholder="Indica aquí si el partido se adelanta o atrasa de semana y la confirmación de la directiva..." class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs outline-none"></textarea>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl space-y-2 text-xs">
+                        <div class="flex justify-between font-bold text-slate-800 border-b border-slate-200 pb-1">
+                            <span>Equipos</span>
+                            <span>Set 1</span>
+                            <span>Set 2</span>
+                            <span>Set 3</span>
+                        </div>
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="font-semibold text-slate-700 truncate w-32">{{ getTeamName(quickMatchData.homeId) }}</span>
+                            <input v-model.number="quickMatchData.match.homeSet1" type="number" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="quickMatchData.match.homeSet2" type="number" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="quickMatchData.match.homeSet3" type="number" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(quickMatchData.match)">
+                        </div>
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="font-semibold text-slate-700 truncate w-32">{{ getTeamName(quickMatchData.awayId) }}</span>
+                            <input v-model.number="quickMatchData.match.awaySet1" type="number" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="quickMatchData.match.awaySet2" type="number" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="quickMatchData.match.awaySet3" type="number" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(quickMatchData.match)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button @click="saveQuickMatchModal" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition">
+                        Guardar Marcador
+                    </button>
+                    <button @click="clearMatchResult(quickMatchData.match)" class="px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-xl text-xs font-bold transition">
+                        Borrar
+                    </button>
+                    <button @click="quickMatchModal = false" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition">
                         Cancelar
                     </button>
                 </div>
@@ -484,15 +568,35 @@
                         Borrar
                     </button>
                     <button @click="quickMatchModal = false" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition">
-                        Cancelar
-                    </button>
-                </div>
+                    Cancelar
+                </button>
             </div>
         </div>
-
     </div>
 
-    <!-- Application Script Logic -->
+    <!-- RESET CONFIRMATION MODAL -->
+    <div v-if="showResetModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> Reiniciar Liga
+            </h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+                ¿Estás seguro de que deseas reiniciar todos los datos de la liga? Se borrarán todos los resultados, equipos y configuraciones guardadas.
+            </p>
+            <div class="flex justify-end gap-2 pt-2">
+                <button @click="showResetModal = false" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+                    Cancelar
+                </button>
+                <button @click="resetAllData" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition">
+                    Sí, reiniciar
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Application Script Logic -->
     <script>
         const { createApp } = Vue;
 
@@ -512,6 +616,7 @@
                 },
                 teams: teams,
                 dinnerCost: 600,
+                menuPrice: 30,
                 matches: []
             };
         }
@@ -532,6 +637,7 @@
                         id: `R${round}_M${i+1}`,
                         round: round,
                         week: `Semana ${round}`,
+                        memo: '',
                         homeId: homeId,
                         awayId: awayId,
                         homeSet1: null,
@@ -562,10 +668,12 @@
                     teams: [],
                     matches: [],
                     dinnerCost: 600,
+                    menuPrice: 30,
                     selectedRound: 1,
                     
                     editingMatch: null,
                     quickMatchModal: false,
+                    showResetModal: false,
                     quickMatchData: {
                         homeId: null,
                         awayId: null,
@@ -677,35 +785,64 @@
                     if (standings.length < 16) return [];
 
                     const totalCost = parseFloat(this.dinnerCost) || 0;
-                    const payingTeams = standings.slice(3);
+                    const unitMenu = parseFloat(this.menuPrice) || 0;
 
-                    const weightFactor = payingTeams.map(t => ({
-                        team: t,
-                        invWeight: 1 / (t.points + 1)
-                    }));
+                    // Los 3 últimos (posiciones 14, 15 y 16) pagan su cena (3) y la de los 3 primeros (3) = 6 cenas repartidas entre 3
+                    const coveredByBottomThree = Math.min(totalCost, unitMenu * 6);
+                    const perBottomThree = coveredByBottomThree / 3;
 
-                    const totalWeight = weightFactor.reduce((sum, item) => sum + item.invWeight, 0);
+                    // El resto del importe total se reparte entre los 10 equipos intermedios (posiciones 4 a 13)
+                    const remainingForMiddleTen = Math.max(0, totalCost - coveredByBottomThree);
+
+                    // Pesos proporcionales a la posición dentro del tramo medio (4º -> 10, 5º -> 9, ..., 13º -> 1)
+                    const middleIndices = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+                    const weightsByIndex = {};
+                    let totalMiddleWeight = 0;
+
+                    middleIndices.forEach((idx, posInMiddle) => {
+                        const weight = 10 - posInMiddle;
+                        weightsByIndex[idx] = weight;
+                        totalMiddleWeight += weight;
+                    });
 
                     return standings.map((team, index) => {
                         const rank = index + 1;
+
                         if (rank <= 3) {
                             return {
                                 rank,
                                 name: team.name,
                                 points: team.points,
                                 isFree: true,
+                                isBottomThree: false,
+                                sharePercent: null,
                                 cost: 0
                             };
                         }
 
-                        const item = weightFactor.find(w => w.team.id === team.id);
-                        const cost = totalWeight > 0 ? (item.invWeight / totalWeight) * totalCost : totalCost / 13;
+                        if (rank >= 14) {
+                            return {
+                                rank,
+                                name: team.name,
+                                points: team.points,
+                                isFree: false,
+                                isBottomThree: true,
+                                sharePercent: null,
+                                cost: Math.round(perBottomThree * 100) / 100
+                            };
+                        }
+
+                        const weight = weightsByIndex[index] || 0;
+                        const sharePercent = totalMiddleWeight > 0 ? (weight / totalMiddleWeight) * 100 : 0;
+                        const cost = remainingForMiddleTen * (sharePercent / 100);
 
                         return {
                             rank,
                             name: team.name,
                             points: team.points,
                             isFree: false,
+                            isBottomThree: false,
+                            sharePercent,
                             cost: Math.round(cost * 100) / 100
                         };
                     });
@@ -719,8 +856,9 @@
                             const parsed = JSON.parse(saved);
                             this.board = parsed.board || { president: 'Por determinar', secretary: 'Por determinar' };
                             this.teams = parsed.teams || createInitialState().teams;
-                            this.matches = parsed.matches || [];
+                            this.matches = (parsed.matches || []).map(m => ({ ...m, memo: m.memo || '' }));
                             this.dinnerCost = parsed.dinnerCost || 600;
+                            this.menuPrice = parsed.menuPrice || 30;
 
                             if (!this.matches || this.matches.length === 0) {
                                 this.matches = generateSchedule(this.teams);
@@ -733,6 +871,7 @@
                         this.board = init.board;
                         this.teams = init.teams;
                         this.dinnerCost = init.dinnerCost;
+                        this.menuPrice = init.menuPrice;
                         this.matches = generateSchedule(this.teams);
                         this.saveData();
                     }
@@ -742,7 +881,8 @@
                         board: this.board,
                         teams: this.teams,
                         matches: this.matches,
-                        dinnerCost: this.dinnerCost
+                        dinnerCost: this.dinnerCost,
+                        menuPrice: this.menuPrice
                     };
                     localStorage.setItem('pickleball_league_v2', JSON.stringify(data));
                 },
@@ -756,7 +896,7 @@
                 closeEditMatchModal() {
                     this.editingMatch = null;
                 },
-                isValidSet(scoreHome, scoreAway, maxPoint, goldPoint) {
+                isValidSet(scoreHome, scoreAway, targetPoint, goldCapPoint) {
                     if (scoreHome === null || scoreAway === null) return true;
                     const h = parseInt(scoreHome);
                     const a = parseInt(scoreAway);
@@ -768,9 +908,14 @@
                     const max = Math.max(h, a);
                     const min = Math.min(h, a);
 
-                    if (max === maxPoint && (max - min) >= 2) return true;
-                    if (max > maxPoint && max < goldPoint && (max - min) === 2) return true;
-                    if (max === goldPoint && (max - min) === 1) return true;
+                    // Victoria estándar al alcanzar targetPoint con ventaja mínima de 2
+                    if (max === targetPoint && (max - min) >= 2) return true;
+
+                    // Ventaja de 2 puntos por encima de targetPoint antes del punto de oro
+                    if (max > targetPoint && max < goldCapPoint && (max - min) === 2) return true;
+
+                    // Punto de oro en el tope establecido: resultado final (goldCapPoint)-(goldCapPoint - 1), ej. 24-23
+                    if (max === goldCapPoint && min === (goldCapPoint - 1)) return true;
 
                     return false;
                 },
@@ -795,15 +940,15 @@
                     const a3 = match.awaySet3 !== '' && match.awaySet3 !== null ? parseInt(match.awaySet3) : null;
 
                     if (h1 !== null || a1 !== null) {
-                        if (!this.isValidSet(h1, a1, 21, 23)) {
-                            this.showToast('El Set 1 debe ser a 21 pts (dif. 2) o punto de oro a 23.', 'danger');
+                        if (!this.isValidSet(h1, a1, 21, 24)) {
+                            this.showToast('El Set 1 debe ser a 21 pts (dif. 2) o punto de oro con final 24-23.', 'danger');
                             return;
                         }
                     }
 
                     if (h2 !== null || a2 !== null) {
-                        if (!this.isValidSet(h2, a2, 21, 23)) {
-                            this.showToast('El Set 2 debe ser a 21 pts (dif. 2) o punto de oro a 23.', 'danger');
+                        if (!this.isValidSet(h2, a2, 21, 24)) {
+                            this.showToast('El Set 2 debe ser a 21 pts (dif. 2) o punto de oro con final 24-23.', 'danger');
                             return;
                         }
                     }
@@ -825,8 +970,8 @@
                             this.showToast('Debes introducir el Set 3 de desempate.', 'warning');
                             return;
                         }
-                        if (!this.isValidSet(h3, a3, 15, 17)) {
-                            this.showToast('El Set 3 debe ser a 15 pts (dif. 2) o punto de oro a 17.', 'danger');
+                        if (!this.isValidSet(h3, a3, 15, 16)) {
+                            this.showToast('El Set 3 debe ser a 15 pts (dif. 2) o punto de oro con final 16-15.', 'danger');
                             return;
                         }
                         if (h3 > a3) homeSetsWon++; else awaySetsWon++;
@@ -863,12 +1008,12 @@
 
                     const idx = this.matches.findIndex(m => m.id === match.id);
                     if (idx !== -1) {
-                        this.matches[idx] = JSON.parse(JSON.stringify(match));
+                        this.matches.splice(idx, 1, JSON.parse(JSON.stringify(match)));
                     }
 
                     this.saveData();
                     this.closeEditMatchModal();
-                    this.showToast('Marcador guardado correctamente', 'success');
+                    this.showToast('Marcador guardado y clasificación actualizada', 'success');
                 },
                 getHeadToHeadResult(teamAId, teamBId) {
                     const match = this.matches.find(m => 
@@ -938,7 +1083,7 @@
 
                     const idx = this.matches.findIndex(m => m.id === match.id);
                     if (idx !== -1) {
-                        this.matches[idx] = JSON.parse(JSON.stringify(match));
+                        this.matches.splice(idx, 1, JSON.parse(JSON.stringify(match)));
                     }
                     this.saveData();
                     this.closeEditMatchModal();
@@ -951,26 +1096,30 @@
                     this.toast.show = true;
                     setTimeout(() => {
                         this.toast.show = false;
-                    }, 3500);
+                    }, 3000);
+                },
+                confirmResetAllData() {
+                    this.showResetModal = true;
                 },
                 resetAllData() {
-                    if (confirm('¿Estás seguro de reiniciar todos los datos?')) {
-                        localStorage.removeItem('pickleball_league_v2');
-                        const init = createInitialState();
-                        this.board = init.board;
-                        this.teams = init.teams;
-                        this.dinnerCost = init.dinnerCost;
-                        this.matches = generateSchedule(this.teams);
-                        this.saveData();
-                        this.showToast('Datos reiniciados por completo', 'warning');
-                    }
+                    this.showResetModal = false;
+                    localStorage.removeItem('pickleball_league_v2');
+                    const init = createInitialState();
+                    this.board = init.board;
+                    this.teams = init.teams;
+                    this.dinnerCost = init.dinnerCost;
+                    this.menuPrice = init.menuPrice;
+                    this.matches = generateSchedule(this.teams);
+                    this.saveData();
+                    this.showToast('Datos reiniciados por completo', 'warning');
                 },
                 exportData() {
                     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
                         board: this.board,
                         teams: this.teams,
                         matches: this.matches,
-                        dinnerCost: this.dinnerCost
+                        dinnerCost: this.dinnerCost,
+                        menuPrice: this.menuPrice
                     }));
                     const downloadAnchor = document.createElement('a');
                     downloadAnchor.setAttribute("href", dataStr);
