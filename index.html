@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liga Amateur de Pickleball</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        [v-cloak] { display: none !important; }
+        .matrix-table th, .matrix-table td {
+            min-width: 105px;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+
+    <div id="app" v-cloak class="max-w-7xl mx-auto p-3 sm:p-6">
+        
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-6 shadow-lg mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight flex items-center gap-3">
+                        <i class="fa-solid fa-table-tennis-paddle-ball text-amber-300"></i>
+                        Liga Amateur de Pickleball
+                    </h1>
+                    <p class="text-emerald-100 text-sm mt-1">16 Equipos • 15 Jornadas • Formato Al Mejor de 3 Sets</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button @click="exportData" class="px-4 py-2 bg-emerald-800/60 hover:bg-emerald-800 rounded-xl text-xs font-semibold backdrop-blur transition flex items-center gap-2">
+                        <i class="fa-solid fa-download"></i> Exportar Datos
+                    </button>
+                    <button @click="resetAllData" class="px-4 py-2 bg-rose-600/80 hover:bg-rose-700 rounded-xl text-xs font-semibold transition flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i> Reiniciar Liga
+                    </button>
+                </div>
+            </div>
+
+            <!-- Directiva Banner -->
+            <div class="mt-4 pt-4 border-t border-emerald-500/40 flex flex-wrap items-center justify-between text-xs text-emerald-100 gap-4">
+                <div class="flex items-center gap-4">
+                    <span class="font-bold uppercase tracking-wider text-amber-300">Junta Directiva:</span>
+                    <span><i class="fa-solid fa-user-tie text-emerald-200"></i> Presidente: <strong class="text-white">{{ board.president || 'No asignado' }}</strong></span>
+                    <span><i class="fa-solid fa-file-signature text-emerald-200"></i> Secretario: <strong class="text-white">{{ board.secretary || 'No asignado' }}</strong></span>
+                </div>
+                <div class="text-emerald-200">
+                    <i class="fa-solid fa-gavel"></i> Decisiones de la directiva inapelables
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex flex-wrap gap-2 mb-6 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+            <button @click="activeTab = 'standings'" :class="activeTab === 'standings' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'" class="flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-trophy"></i> Clasificación
+            </button>
+            <button @click="activeTab = 'matrix'" :class="activeTab === 'matrix' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'" class="flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-table-cells"></i> Cuadro Doble Entrada (16x16)
+            </button>
+            <button @click="activeTab = 'schedule'" :class="activeTab === 'schedule' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'" class="flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-calendar-days"></i> Calendario / Jornadas
+            </button>
+            <button @click="activeTab = 'teams'" :class="activeTab === 'teams' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'" class="flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-users"></i> Equipos y Directiva
+            </button>
+            <button @click="activeTab = 'rules'" :class="activeTab === 'rules' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'" class="flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-book"></i> Reglamento y Cena
+            </button>
+        </nav>
+
+        <!-- Toast Notifications -->
+        <div v-if="toast.show" class="fixed bottom-5 right-5 z-50 px-5 py-3 rounded-xl shadow-2xl text-white font-medium text-sm flex items-center gap-3 transition-all transform duration-300" :class="toast.type === 'danger' ? 'bg-rose-600' : (toast.type === 'warning' ? 'bg-amber-600' : 'bg-emerald-600')">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>{{ toast.message }}</span>
+        </div>
+
+        <!-- TAB 1: CLASIFICACIÓN GENERAL -->
+        <section v-if="activeTab === 'standings'" class="space-y-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h2 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-list-ol text-emerald-600"></i> Clasificación General
+                    </h2>
+                    <span class="text-xs text-slate-500 font-medium">Criterio: Puntos &gt; Gol-Average Directo &gt; Dif. Sets &gt; Dif. Puntos</span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase tracking-wider">
+                                <th class="p-3 text-center">Pos</th>
+                                <th class="p-3">Equipo</th>
+                                <th class="p-3 text-center font-bold text-emerald-700">Pts</th>
+                                <th class="p-3 text-center">PJ</th>
+                                <th class="p-3 text-center">PG</th>
+                                <th class="p-3 text-center">PP</th>
+                                <th class="p-3 text-center">SG</th>
+                                <th class="p-3 text-center">SP</th>
+                                <th class="p-3 text-center">Diff Sets</th>
+                                <th class="p-3 text-center">PF</th>
+                                <th class="p-3 text-center">PC</th>
+                                <th class="p-3 text-center">Diff Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-sm">
+                            <tr v-for="(team, idx) in tableStandings" :key="team.id" class="hover:bg-slate-50 transition" :class="idx < 3 ? 'bg-emerald-50/40 font-medium' : ''">
+                                <td class="p-3 text-center font-bold">
+                                    <span v-if="idx === 0" class="w-7 h-7 rounded-full bg-amber-400 text-white inline-flex items-center justify-center text-xs shadow"><i class="fa-solid fa-crown"></i></span>
+                                    <span v-else-if="idx === 1" class="w-7 h-7 rounded-full bg-slate-300 text-slate-700 inline-flex items-center justify-center text-xs shadow font-bold">2</span>
+                                    <span v-else-if="idx === 2" class="w-7 h-7 rounded-full bg-amber-700 text-white inline-flex items-center justify-center text-xs shadow font-bold">3</span>
+                                    <span v-else class="text-slate-500">{{ idx + 1 }}</span>
+                                </td>
+                                <td class="p-3 font-semibold text-slate-800">
+                                    {{ team.name }}
+                                    <span v-if="idx < 3" class="ml-2 text-xs px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full">Cena Gratis 🎉</span>
+                                </td>
+                                <td class="p-3 text-center font-black text-emerald-600 text-base bg-emerald-50/80">{{ team.points }}</td>
+                                <td class="p-3 text-center">{{ team.played }}</td>
+                                <td class="p-3 text-center text-emerald-600 font-semibold">{{ team.won }}</td>
+                                <td class="p-3 text-center text-rose-500">{{ team.lost }}</td>
+                                <td class="p-3 text-center">{{ team.setsWon }}</td>
+                                <td class="p-3 text-center">{{ team.setsLost }}</td>
+                                <td class="p-3 text-center font-semibold" :class="team.setsDiff > 0 ? 'text-emerald-600' : (team.setsDiff < 0 ? 'text-rose-500' : 'text-slate-400')">
+                                    {{ team.setsDiff > 0 ? '+' + team.setsDiff : team.setsDiff }}
+                                </td>
+                                <td class="p-3 text-center">{{ team.pointsWon }}</td>
+                                <td class="p-3 text-center">{{ team.pointsLost }}</td>
+                                <td class="p-3 text-center font-semibold" :class="team.pointsDiff > 0 ? 'text-emerald-600' : (team.pointsDiff < 0 ? 'text-rose-500' : 'text-slate-400')">
+                                    {{ team.pointsDiff > 0 ? '+' + team.pointsDiff : team.pointsDiff }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: CUADRO DE DOBLE ENTRADA (MATRIZ 16x16) -->
+        <section v-if="activeTab === 'matrix'" class="space-y-4">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-table-cells text-emerald-600"></i> Matriz de Resultados (16x16)
+                        </h2>
+                        <p class="text-xs text-slate-500">Filas: Equipo Local (Casa) | Columnas: Equipo Visitante (Fuera). Haz clic en una casilla para editar el marcador.</p>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs">
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-emerald-100 border border-emerald-300 rounded"></span> Victoria Local</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-rose-100 border border-rose-300 rounded"></span> Victoria Visitante</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-white border border-slate-300 rounded"></span> Pendiente</span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                    <table class="matrix-table w-full text-center border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                <th class="p-2 border-r border-slate-200 bg-slate-200 text-slate-800 sticky left-0 z-10">Local \ Vis.</th>
+                                <th v-for="tCol in teams" :key="'col-'+tCol.id" class="p-2 border-r border-slate-200 truncate max-w-[100px]" :title="tCol.name">
+                                    E{{ tCol.id }}
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="tRow in teams" :key="'row-'+tRow.id" class="border-b border-slate-200">
+                                <td class="p-2 font-bold bg-slate-100 border-r border-slate-200 text-slate-800 text-left truncate sticky left-0 z-10" :title="tRow.name">
+                                    E{{ tRow.id }} - {{ tRow.name }}
+                                </td>
+                                <td v-for="tCol in teams" :key="'cell-'+tRow.id+'-'+tCol.id" class="p-1 border-r border-slate-200 transition">
+                                    <div v-if="tRow.id === tCol.id" class="bg-slate-200 text-slate-400 p-2 font-black rounded select-none">✕</div>
+                                    <button v-else @click="openQuickMatchModal(tRow.id, tCol.id)" :class="getMatrixCellClass(tRow.id, tCol.id)" class="w-full h-full p-2 rounded text-xs transition flex flex-col items-center justify-center gap-0.5 min-h-[48px]">
+                                        <span>{{ getMatrixCellText(tRow.id, tCol.id) }}</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: CALENDARIO DE JORNADAS -->
+        <section v-if="activeTab === 'schedule'" class="space-y-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                    <h2 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-emerald-600"></i> Calendario de Partidos
+                    </h2>
+                    
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-semibold text-slate-600">Seleccionar Jornada:</label>
+                        <select v-model="selectedRound" class="bg-slate-100 border border-slate-300 rounded-xl px-4 py-2 font-bold text-emerald-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option v-for="r in 15" :key="r" :value="r">Jornada {{ r }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div v-for="match in currentRoundMatches" :key="match.id" class="border border-slate-200 rounded-xl p-4 hover:shadow-md transition bg-white flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg">Jornada {{ match.round }}</span>
+                                <span class="text-xs text-slate-500 font-medium"><i class="fa-solid fa-clock"></i> {{ match.week || 'Sin fecha' }}</span>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center p-2 rounded-lg" :class="match.winnerId === match.homeId ? 'bg-emerald-50 font-bold text-emerald-900 border border-emerald-200' : 'bg-slate-50'">
+                                    <span class="text-sm truncate">{{ getTeamName(match.homeId) }}</span>
+                                    <span class="text-xs font-semibold" v-if="match.played">+{{ match.homePoints }} pts</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 rounded-lg" :class="match.winnerId === match.awayId ? 'bg-emerald-50 font-bold text-emerald-900 border border-emerald-200' : 'bg-slate-50'">
+                                    <span class="text-sm truncate">{{ getTeamName(match.awayId) }}</span>
+                                    <span class="text-xs font-semibold" v-if="match.played">+{{ match.awayPoints }} pts</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                                <span class="text-slate-500">Resultado:</span>
+                                <span v-if="match.played" class="font-bold text-slate-800">
+                                    {{ match.homeSet1 }}-{{ match.awaySet1 }}, {{ match.homeSet2 }}-{{ match.awaySet2 }}
+                                    <template v-if="match.homeSet3 !== null && match.awaySet3 !== null">, {{ match.homeSet3 }}-{{ match.awaySet3 }}</template>
+                                </span>
+                                <span v-else class="text-amber-600 font-medium">Pendiente de jugar</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-2">
+                            <button @click="openEditMatchModal(match)" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-pen-to-square"></i> {{ match.played ? 'Modificar Marcador' : 'Anotar Resultado' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: EQUIPOS Y DIRECTIVA -->
+        <section v-if="activeTab === 'teams'" class="space-y-6">
+            <!-- Junta Directiva Settings -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                <h2 class="font-bold text-slate-800 text-lg flex items-center gap-2 mb-4">
+                    <i class="fa-solid fa-user-shield text-emerald-600"></i> Configuración de la Junta Directiva
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Presidente:</label>
+                        <input v-model="board.president" @change="saveData" type="text" placeholder="Nombre del Presidente" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Secretario:</label>
+                        <input v-model="board.secretary" @change="saveData" type="text" placeholder="Nombre del Secretario" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teams List -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                <h2 class="font-bold text-slate-800 text-lg flex items-center gap-2 mb-4">
+                    <i class="fa-solid fa-users text-emerald-600"></i> Equipos e Integrantes (16 Equipos)
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div v-for="team in teams" :key="team.id" class="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-3">
+                        <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">{{ team.id }}</span>
+                            <input v-model="team.name" @change="saveData" type="text" class="font-bold text-slate-800 bg-transparent border-b border-dashed border-slate-400 focus:border-emerald-600 outline-none text-sm w-full">
+                        </div>
+
+                        <div class="space-y-1.5 text-xs">
+                            <div>
+                                <label class="text-slate-500">Jugador 1:</label>
+                                <input v-model="team.player1" @change="saveData" type="text" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-slate-700 outline-none">
+                            </div>
+                            <div>
+                                <label class="text-slate-500">Jugador 2:</label>
+                                <input v-model="team.player2" @change="saveData" type="text" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-slate-700 outline-none">
+                            </div>
+                            <div>
+                                <label class="text-slate-500">Jugador 3:</label>
+                                <input v-model="team.player3" @change="saveData" type="text" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-slate-700 outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: REGLAMENTO Y CENA -->
+        <section v-if="activeTab === 'rules'" class="space-y-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+                <h2 class="font-bold text-slate-800 text-xl flex items-center gap-2 border-b border-slate-100 pb-4">
+                    <i class="fa-solid fa-book-bookmark text-emerald-600"></i> Reglamento Oficial de la Liga
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-700">
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <h3 class="font-bold text-emerald-800 mb-2 flex items-center gap-2"><i class="fa-solid fa-trophy"></i> Formato y Puntuación</h3>
+                            <ul class="list-disc pl-5 space-y-1 text-xs">
+                                <li>Los partidos se disputan al mejor de 3 sets.</li>
+                                <li><strong>Sets 1 y 2:</strong> Se juegan a 21 puntos con punto de oro a los 23 (ejemplo: 23-22 gana set).</li>
+                                <li><strong>Set 3 (Desempate):</strong> En caso de 1-1, se juega a 15 puntos con punto de oro a los 17 (ejemplo: 17-16 gana set).</li>
+                                <li><strong>Victoria 2-0:</strong> El ganador obtiene <strong>3 puntos</strong>, el perdedor 0.</li>
+                                <li><strong>Victoria 2-1:</strong> El ganador obtiene <strong>2 puntos</strong>, el perdedor <strong>1 punto</strong>.</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <h3 class="font-bold text-emerald-800 mb-2 flex items-center gap-2"><i class="fa-solid fa-scale-balanced"></i> Criterios de Desempate en Clasificación</h3>
+                            <ol class="list-decimal pl-5 space-y-1 text-xs">
+                                <li><strong>Gol-average particular:</strong> Enfrentamiento directo entre los equipos empatados.</li>
+                                <li><strong>Diferencia de Sets:</strong> Sets ganados menos sets perdidos a lo largo del torneo.</li>
+                                <li><strong>Diferencia de Puntos:</strong> Puntos totales ganados menos puntos perdidos.</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <h3 class="font-bold text-emerald-800 mb-2 flex items-center gap-2"><i class="fa-solid fa-calendar-check"></i> Calendario y Aplazamientos</h3>
+                            <p class="text-xs leading-relaxed">
+                                Un partido se podrá jugar en la <strong>semana anterior o posterior</strong> a la fecha oficialmente establecida, previo acuerdo entre los dos equipos concernidos y comunicación clara a un miembro de la directiva (Presidente o Secretario).
+                            </p>
+                        </div>
+
+                        <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 text-amber-900">
+                            <h3 class="font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-gavel"></i> Disputas y Decisiones Inapelables</h3>
+                            <p class="text-xs leading-relaxed">
+                                Ante cualquier disputa o desacuerdo que pueda producirse a lo largo de la competición, será la <strong>Junta Directiva</strong> (Presidente y Secretario) la encargada de resolver <strong>sin derecho a apelación ninguna</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dinner Calculator section -->
+                <div class="mt-8 pt-6 border-t border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-lg mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-utensils text-emerald-600"></i> Cena de Confraternidad y Reparto de Factura
+                    </h3>
+                    
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-xs text-emerald-900 mb-4">
+                        <p class="mb-2"><strong>Menú Oficial Obligatorio:</strong> Incluye bebida, un mínimo de 2 mariscos, plato principal y postre.</p>
+                        <p><strong>Regla de Pago:</strong> La cena será sufragada por todos los equipos <u>excepto los 3 primeros clasificados</u>, que cenarán gratis. El importe restante se distribuye de forma <strong>inversamente proporcional</strong> a los puntos conseguidos en la liga.</p>
+                    </div>
+
+                    <div class="flex items-center gap-3 mb-4">
+                        <label class="text-xs font-bold text-slate-700">Coste Total de la Factura (€):</label>
+                        <input v-model.number="dinnerCost" @change="saveData" type="number" class="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+
+                    <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700 font-bold">
+                                    <th class="p-2 text-center">Pos</th>
+                                    <th class="p-2">Equipo</th>
+                                    <th class="p-2 text-center">Puntos</th>
+                                    <th class="p-2 text-center">Estado Pago</th>
+                                    <th class="p-2 text-right">Cuota Estimada (€)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="item in dinnerCalculations" :key="item.rank" :class="item.isFree ? 'bg-emerald-100/50 font-bold' : ''">
+                                    <td class="p-2 text-center">{{ item.rank }}º</td>
+                                    <td class="p-2">{{ item.name }}</td>
+                                    <td class="p-2 text-center font-semibold">{{ item.points }}</td>
+                                    <td class="p-2 text-center">
+                                        <span v-if="item.isFree" class="px-2 py-0.5 bg-emerald-600 text-white rounded-full font-bold">GRATIS 🎉</span>
+                                        <span v-else class="text-slate-600">De pago</span>
+                                    </td>
+                                    <td class="p-2 text-right font-bold text-slate-800">
+                                        {{ item.isFree ? '0.00 €' : item.cost.toFixed(2) + ' €' }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- EDIT MATCH MODAL -->
+        <div v-if="editingMatch" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-800 text-base">Anotar Resultado - Jornada {{ editingMatch.round }}</h3>
+                    <button @click="closeEditMatchModal" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Semana de juego:</label>
+                        <input v-model="editingMatch.week" type="text" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl space-y-2 text-xs">
+                        <div class="flex justify-between font-bold text-slate-800 border-b border-slate-200 pb-1">
+                            <span>Equipos</span>
+                            <span>Set 1 (21p)</span>
+                            <span>Set 2 (21p)</span>
+                            <span>Set 3 (15p)</span>
+                        </div>
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="font-semibold text-slate-700 truncate w-32">{{ getTeamName(editingMatch.homeId) }}</span>
+                            <input v-model.number="editingMatch.homeSet1" type="number" min="0" max="23" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="editingMatch.homeSet2" type="number" min="0" max="23" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="editingMatch.homeSet3" type="number" min="0" max="17" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(editingMatch)">
+                        </div>
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="font-semibold text-slate-700 truncate w-32">{{ getTeamName(editingMatch.awayId) }}</span>
+                            <input v-model.number="editingMatch.awaySet1" type="number" min="0" max="23" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="editingMatch.awaySet2" type="number" min="0" max="23" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="editingMatch.awaySet3" type="number" min="0" max="17" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(editingMatch)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button @click="validateAndSaveMatch(editingMatch)" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition">
+                        Guardar Marcador
+                    </button>
+                    <button @click="clearMatchResult(editingMatch)" class="px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-xl text-xs font-bold transition">
+                        Borrar
+                    </button>
+                    <button @click="closeEditMatchModal" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUICK MATCH MODAL (From Matrix) -->
+        <div v-if="quickMatchModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-800 text-base">Partido: Jornada {{ quickMatchData.match ? quickMatchData.match.round : '' }}</h3>
+                    <button @click="quickMatchModal = false" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+                </div>
+
+                <div v-if="quickMatchData.match" class="space-y-3">
+                    <div class="text-xs text-slate-500 font-medium">
+                        Local: <strong>{{ getTeamName(quickMatchData.homeId) }}</strong> vs Visitante: <strong>{{ getTeamName(quickMatchData.awayId) }}</strong>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Semana de juego:</label>
+                        <input v-model="quickMatchData.match.week" type="text" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs outline-none">
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl space-y-2 text-xs">
+                        <div class="flex justify-between font-bold text-slate-800 border-b border-slate-200 pb-1">
+                            <span>Equipos</span>
+                            <span>Set 1</span>
+                            <span>Set 2</span>
+                            <span>Set 3</span>
+                        </div>
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="font-semibold text-slate-700 truncate w-32">{{ getTeamName(quickMatchData.homeId) }}</span>
+                            <input v-model.number="quickMatchData.match.homeSet1" type="number" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="quickMatchData.match.homeSet2" type="number" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="quickMatchData.match.homeSet3" type="number" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(quickMatchData.match)">
+                        </div>
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="font-semibold text-slate-700 truncate w-32">{{ getTeamName(quickMatchData.awayId) }}</span>
+                            <input v-model.number="quickMatchData.match.awaySet1" type="number" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="quickMatchData.match.awaySet2" type="number" class="w-14 text-center border rounded p-1 font-bold">
+                            <input v-model.number="quickMatchData.match.awaySet3" type="number" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(quickMatchData.match)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button @click="saveQuickMatchModal" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition">
+                        Guardar Marcador
+                    </button>
+                    <button @click="clearMatchResult(quickMatchData.match)" class="px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-xl text-xs font-bold transition">
+                        Borrar
+                    </button>
+                    <button @click="quickMatchModal = false" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        const { createApp } = Vue;
+
+        function createInitialState() {
+            const teams = Array.from({ length: 16 }, (_, i) => ({
+                id: i + 1,
+                name: `Equipo_${i + 1}`,
+                player1: `Jugador ${i + 1}-A`,
+                player2: `Jugador ${i + 1}-B`,
+                player3: `Jugador ${i + 1}-C`
+            }));
+
+            return {
+                board: {
+                    president: 'Por determinar',
+                    secretary: 'Por determinar'
+                },
+                teams: teams,
+                dinnerCost: 600,
+                matches: []
+            };
+        }
+
+        function generateSchedule(teams) {
+            const numTeams = 16;
+            const teamIds = Array.from({ length: numTeams }, (_, i) => i + 1);
+            const matches = [];
+
+            let rotation = [...teamIds];
+
+            for (let round = 1; round <= 15; round++) {
+                for (let i = 0; i < numTeams / 2; i++) {
+                    const homeId = rotation[i];
+                    const awayId = rotation[numTeams - 1 - i];
+
+                    matches.push({
+                        id: `R${round}_M${i+1}`,
+                        round: round,
+                        week: `Semana ${round}`,
+                        homeId: homeId,
+                        awayId: awayId,
+                        homeSet1: null,
+                        awaySet1: null,
+                        homeSet2: null,
+                        awaySet2: null,
+                        homeSet3: null,
+                        awaySet3: null,
+                        played: false,
+                        winnerId: null,
+                        homePoints: 0,
+                        awayPoints: 0
+                    });
+                }
+
+                const last = rotation.pop();
+                rotation.splice(1, 0, last);
+            }
+
+            return matches;
+        }
+
+        const app = createApp({
+            data() {
+                return {
+                    activeTab: 'standings',
+                    board: { president: '', secretary: '' },
+                    teams: [],
+                    matches: [],
+                    dinnerCost: 600,
+                    selectedRound: 1,
+                    
+                    editingMatch: null,
+                    quickMatchModal: false,
+                    quickMatchData: {
+                        homeId: null,
+                        awayId: null,
+                        match: null
+                    },
+
+                    toast: {
+                        show: false,
+                        message: '',
+                        type: 'info'
+                    }
+                }
+            },
+            created() {
+                this.loadData();
+            },
+            computed: {
+                currentRoundMatches() {
+                    return this.matches.filter(m => m.round === parseInt(this.selectedRound));
+                },
+                tableStandings() {
+                    const stats = {};
+                    this.teams.forEach(t => {
+                        stats[t.id] = {
+                            id: t.id,
+                            name: t.name,
+                            points: 0,
+                            played: 0,
+                            won: 0,
+                            lost: 0,
+                            setsWon: 0,
+                            setsLost: 0,
+                            setsDiff: 0,
+                            pointsWon: 0,
+                            pointsLost: 0,
+                            pointsDiff: 0
+                        };
+                    });
+
+                    this.matches.forEach(m => {
+                        if (!m.played) return;
+
+                        const home = stats[m.homeId];
+                        const away = stats[m.awayId];
+                        if (!home || !away) return;
+
+                        home.played++;
+                        away.played++;
+
+                        home.points += m.homePoints;
+                        away.points += m.awayPoints;
+
+                        if (m.winnerId === m.homeId) {
+                            home.won++;
+                            away.lost++;
+                        } else if (m.winnerId === m.awayId) {
+                            away.won++;
+                            home.lost++;
+                        }
+
+                        let homeSets = 0;
+                        let awaySets = 0;
+                        if (m.homeSet1 !== null && m.awaySet1 !== null) {
+                            if (m.homeSet1 > m.awaySet1) homeSets++; else awaySets++;
+                        }
+                        if (m.homeSet2 !== null && m.awaySet2 !== null) {
+                            if (m.homeSet2 > m.awaySet2) homeSets++; else awaySets++;
+                        }
+                        if (m.homeSet3 !== null && m.awaySet3 !== null) {
+                            if (m.homeSet3 > m.awaySet3) homeSets++; else awaySets++;
+                        }
+
+                        home.setsWon += homeSets;
+                        home.setsLost += awaySets;
+                        away.setsWon += awaySets;
+                        away.setsLost += homeSets;
+
+                        const hPts = (m.homeSet1 || 0) + (m.homeSet2 || 0) + (m.homeSet3 || 0);
+                        const aPts = (m.awaySet1 || 0) + (m.awaySet2 || 0) + (m.awaySet3 || 0);
+
+                        home.pointsWon += hPts;
+                        home.pointsLost += aPts;
+                        away.pointsWon += aPts;
+                        away.pointsLost += hPts;
+                    });
+
+                    Object.values(stats).forEach(s => {
+                        s.setsDiff = s.setsWon - s.setsLost;
+                        s.pointsDiff = s.pointsWon - s.pointsLost;
+                    });
+
+                    const standings = Object.values(stats);
+
+                    standings.sort((a, b) => {
+                        if (b.points !== a.points) return b.points - a.points;
+
+                        const h2h = this.getHeadToHeadResult(a.id, b.id);
+                        if (h2h !== 0) return h2h;
+
+                        if (b.setsDiff !== a.setsDiff) return b.setsDiff - a.setsDiff;
+
+                        return b.pointsDiff - a.pointsDiff;
+                    });
+
+                    return standings;
+                },
+                dinnerCalculations() {
+                    const standings = this.tableStandings;
+                    if (standings.length < 16) return [];
+
+                    const totalCost = parseFloat(this.dinnerCost) || 0;
+                    const payingTeams = standings.slice(3);
+
+                    const weightFactor = payingTeams.map(t => ({
+                        team: t,
+                        invWeight: 1 / (t.points + 1)
+                    }));
+
+                    const totalWeight = weightFactor.reduce((sum, item) => sum + item.invWeight, 0);
+
+                    return standings.map((team, index) => {
+                        const rank = index + 1;
+                        if (rank <= 3) {
+                            return {
+                                rank,
+                                name: team.name,
+                                points: team.points,
+                                isFree: true,
+                                cost: 0
+                            };
+                        }
+
+                        const item = weightFactor.find(w => w.team.id === team.id);
+                        const cost = totalWeight > 0 ? (item.invWeight / totalWeight) * totalCost : totalCost / 13;
+
+                        return {
+                            rank,
+                            name: team.name,
+                            points: team.points,
+                            isFree: false,
+                            cost: Math.round(cost * 100) / 100
+                        };
+                    });
+                }
+            },
+            methods: {
+                loadData() {
+                    const saved = localStorage.getItem('pickleball_league_v2');
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved);
+                            this.board = parsed.board || { president: 'Por determinar', secretary: 'Por determinar' };
+                            this.teams = parsed.teams || createInitialState().teams;
+                            this.matches = parsed.matches || [];
+                            this.dinnerCost = parsed.dinnerCost || 600;
+
+                            if (!this.matches || this.matches.length === 0) {
+                                this.matches = generateSchedule(this.teams);
+                            }
+                        } catch(e) {
+                            this.resetAllData();
+                        }
+                    } else {
+                        const init = createInitialState();
+                        this.board = init.board;
+                        this.teams = init.teams;
+                        this.dinnerCost = init.dinnerCost;
+                        this.matches = generateSchedule(this.teams);
+                        this.saveData();
+                    }
+                },
+                saveData() {
+                    const data = {
+                        board: this.board,
+                        teams: this.teams,
+                        matches: this.matches,
+                        dinnerCost: this.dinnerCost
+                    };
+                    localStorage.setItem('pickleball_league_v2', JSON.stringify(data));
+                },
+                getTeamName(id) {
+                    const t = this.teams.find(x => x.id === id);
+                    return t ? t.name : `Equipo ${id}`;
+                },
+                openEditMatchModal(match) {
+                    this.editingMatch = JSON.parse(JSON.stringify(match));
+                },
+                closeEditMatchModal() {
+                    this.editingMatch = null;
+                },
+                isValidSet(scoreHome, scoreAway, maxPoint, goldPoint) {
+                    if (scoreHome === null || scoreAway === null) return true;
+                    const h = parseInt(scoreHome);
+                    const a = parseInt(scoreAway);
+
+                    if (isNaN(h) || isNaN(a)) return false;
+                    if (h < 0 || a < 0) return false;
+                    if (h === a) return false;
+
+                    const max = Math.max(h, a);
+                    const min = Math.min(h, a);
+
+                    if (max === maxPoint && (max - min) >= 2) return true;
+                    if (max > maxPoint && max < goldPoint && (max - min) === 2) return true;
+                    if (max === goldPoint && (max - min) === 1) return true;
+
+                    return false;
+                },
+                requiresThirdSet(match) {
+                    if (!match) return false;
+                    const h1 = match.homeSet1, a1 = match.awaySet1;
+                    const h2 = match.homeSet2, a2 = match.awaySet2;
+
+                    if (h1 === null || a1 === null || h2 === null || a2 === null) return false;
+
+                    const h1Win = parseInt(h1) > parseInt(a1);
+                    const h2Win = parseInt(h2) > parseInt(a2);
+
+                    return h1Win !== h2Win;
+                },
+                validateAndSaveMatch(match) {
+                    const h1 = match.homeSet1 !== '' && match.homeSet1 !== null ? parseInt(match.homeSet1) : null;
+                    const a1 = match.awaySet1 !== '' && match.awaySet1 !== null ? parseInt(match.awaySet1) : null;
+                    const h2 = match.homeSet2 !== '' && match.homeSet2 !== null ? parseInt(match.homeSet2) : null;
+                    const a2 = match.awaySet2 !== '' && match.awaySet2 !== null ? parseInt(match.awaySet2) : null;
+                    const h3 = match.homeSet3 !== '' && match.homeSet3 !== null ? parseInt(match.homeSet3) : null;
+                    const a3 = match.awaySet3 !== '' && match.awaySet3 !== null ? parseInt(match.awaySet3) : null;
+
+                    if (h1 !== null || a1 !== null) {
+                        if (!this.isValidSet(h1, a1, 21, 23)) {
+                            this.showToast('El Set 1 debe ser a 21 pts (dif. 2) o punto de oro a 23.', 'danger');
+                            return;
+                        }
+                    }
+
+                    if (h2 !== null || a2 !== null) {
+                        if (!this.isValidSet(h2, a2, 21, 23)) {
+                            this.showToast('El Set 2 debe ser a 21 pts (dif. 2) o punto de oro a 23.', 'danger');
+                            return;
+                        }
+                    }
+
+                    let homeSetsWon = 0;
+                    let awaySetsWon = 0;
+
+                    if (h1 !== null && a1 !== null) {
+                        if (h1 > a1) homeSetsWon++; else awaySetsWon++;
+                    }
+                    if (h2 !== null && a2 !== null) {
+                        if (h2 > a2) homeSetsWon++; else awaySetsWon++;
+                    }
+
+                    const needsSet3 = (homeSetsWon === 1 && awaySetsWon === 1);
+
+                    if (needsSet3) {
+                        if (h3 === null || a3 === null) {
+                            this.showToast('Debes introducir el Set 3 de desempate.', 'warning');
+                            return;
+                        }
+                        if (!this.isValidSet(h3, a3, 15, 17)) {
+                            this.showToast('El Set 3 debe ser a 15 pts (dif. 2) o punto de oro a 17.', 'danger');
+                            return;
+                        }
+                        if (h3 > a3) homeSetsWon++; else awaySetsWon++;
+                    }
+
+                    if (homeSetsWon === 2 || awaySetsWon === 2) {
+                        match.played = true;
+                        match.winnerId = homeSetsWon === 2 ? match.homeId : match.awayId;
+
+                        if (homeSetsWon === 2 && awaySetsWon === 0) {
+                            match.homePoints = 3;
+                            match.awayPoints = 0;
+                        } else if (awaySetsWon === 2 && homeSetsWon === 0) {
+                            match.homePoints = 0;
+                            match.awayPoints = 3;
+                        } else if (homeSetsWon === 2 && awaySetsWon === 1) {
+                            match.homePoints = 2;
+                            match.awayPoints = 1;
+                        } else if (awaySetsWon === 2 && homeSetsWon === 1) {
+                            match.homePoints = 1;
+                            match.awayPoints = 2;
+                        }
+
+                        if (!needsSet3) {
+                            match.homeSet3 = null;
+                            match.awaySet3 = null;
+                        }
+                    } else {
+                        match.played = false;
+                        match.winnerId = null;
+                        match.homePoints = 0;
+                        match.awayPoints = 0;
+                    }
+
+                    const idx = this.matches.findIndex(m => m.id === match.id);
+                    if (idx !== -1) {
+                        this.matches[idx] = JSON.parse(JSON.stringify(match));
+                    }
+
+                    this.saveData();
+                    this.closeEditMatchModal();
+                    this.showToast('Marcador guardado correctamente', 'success');
+                },
+                getHeadToHeadResult(teamAId, teamBId) {
+                    const match = this.matches.find(m => 
+                        (m.homeId === teamAId && m.awayId === teamBId) || 
+                        (m.homeId === teamBId && m.awayId === teamAId)
+                    );
+
+                    if (!match || !match.played) return 0;
+
+                    if (match.winnerId === teamAId) return -1;
+                    if (match.winnerId === teamBId) return 1;
+                    return 0;
+                },
+                getMatchBetween(homeId, awayId) {
+                    return this.matches.find(m => m.homeId === homeId && m.awayId === awayId);
+                },
+                getMatrixCellText(homeId, awayId) {
+                    const match = this.getMatchBetween(homeId, awayId);
+                    if (!match) return '-';
+                    if (!match.played) return `J${match.round}`;
+
+                    let text = `${match.homeSet1}-${match.awaySet1}, ${match.homeSet2}-${match.awaySet2}`;
+                    if (match.homeSet3 !== null && match.awaySet3 !== null) {
+                        text += `, ${match.homeSet3}-${match.awaySet3}`;
+                    }
+                    return text;
+                },
+                getMatrixCellClass(homeId, awayId) {
+                    const match = this.getMatchBetween(homeId, awayId);
+                    if (!match) return 'bg-gray-100 text-gray-400 cursor-not-allowed';
+                    if (!match.played) return 'bg-white hover:bg-emerald-50 text-emerald-700 font-medium border border-gray-100 cursor-pointer';
+                    
+                    if (match.winnerId === homeId) {
+                        return 'bg-emerald-100 text-emerald-900 font-semibold border border-emerald-200 cursor-pointer';
+                    } else {
+                        return 'bg-rose-50 text-rose-800 font-medium border border-rose-100 cursor-pointer';
+                    }
+                },
+                openQuickMatchModal(homeId, awayId) {
+                    const match = this.getMatchBetween(homeId, awayId);
+                    if (!match) return;
+
+                    this.quickMatchData = {
+                        homeId: homeId,
+                        awayId: awayId,
+                        match: JSON.parse(JSON.stringify(match))
+                    };
+                    this.quickMatchModal = true;
+                },
+                saveQuickMatchModal() {
+                    if (this.quickMatchData.match) {
+                        this.validateAndSaveMatch(this.quickMatchData.match);
+                        this.quickMatchModal = false;
+                    }
+                },
+                clearMatchResult(match) {
+                    match.homeSet1 = null;
+                    match.awaySet1 = null;
+                    match.homeSet2 = null;
+                    match.awaySet2 = null;
+                    match.homeSet3 = null;
+                    match.awaySet3 = null;
+                    match.played = false;
+                    match.winnerId = null;
+                    match.homePoints = 0;
+                    match.awayPoints = 0;
+
+                    const idx = this.matches.findIndex(m => m.id === match.id);
+                    if (idx !== -1) {
+                        this.matches[idx] = JSON.parse(JSON.stringify(match));
+                    }
+                    this.saveData();
+                    this.closeEditMatchModal();
+                    this.quickMatchModal = false;
+                    this.showToast('Resultado reseteado', 'info');
+                },
+                showToast(msg, type = 'info') {
+                    this.toast.message = msg;
+                    this.toast.type = type;
+                    this.toast.show = true;
+                    setTimeout(() => {
+                        this.toast.show = false;
+                    }, 3500);
+                },
+                resetAllData() {
+                    if (confirm('¿Estás seguro de reiniciar todos los datos?')) {
+                        localStorage.removeItem('pickleball_league_v2');
+                        const init = createInitialState();
+                        this.board = init.board;
+                        this.teams = init.teams;
+                        this.dinnerCost = init.dinnerCost;
+                        this.matches = generateSchedule(this.teams);
+                        this.saveData();
+                        this.showToast('Datos reiniciados por completo', 'warning');
+                    }
+                },
+                exportData() {
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                        board: this.board,
+                        teams: this.teams,
+                        matches: this.matches,
+                        dinnerCost: this.dinnerCost
+                    }));
+                    const downloadAnchor = document.createElement('a');
+                    downloadAnchor.setAttribute("href", dataStr);
+                    downloadAnchor.setAttribute("download", `liga_pickleball_backup.json`);
+                    document.body.appendChild(downloadAnchor);
+                    downloadAnchor.click();
+                    downloadAnchor.remove();
+                }
+            }
+        });
+
+        app.mount('#app');
+    </script>
+</body>
+</html>
