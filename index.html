@@ -33,12 +33,23 @@
                     <p class="text-emerald-100 text-sm mt-1">16 Equipos • 15 Jornadas • Formato Al Mejor de 3 Sets</p>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <button @click="exportData" class="px-4 py-2 bg-emerald-800/60 hover:bg-emerald-800 rounded-xl text-xs font-semibold backdrop-blur transition flex items-center gap-2">
-                        <i class="fa-solid fa-download"></i> Exportar Datos
+                    <button v-if="!isBoardUnlocked" @click="openPinModal('unlock')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow">
+                        <i class="fa-solid fa-lock"></i> Modo Directiva
                     </button>
-                    <button @click="confirmResetAllData" class="px-4 py-2 bg-rose-600/80 hover:bg-rose-700 rounded-xl text-xs font-semibold transition flex items-center gap-2">
-                        <i class="fa-solid fa-rotate-left"></i> Reiniciar Liga
-                    </button>
+                    <template v-else>
+                        <button @click="lockBoardMode" class="px-4 py-2 bg-emerald-900/80 hover:bg-emerald-950 text-amber-300 rounded-xl text-xs font-semibold transition flex items-center gap-2">
+                            <i class="fa-solid fa-lock-open"></i> Bloquear Edición
+                        </button>
+                        <button @click="openPinModal('changePin')" class="px-4 py-2 bg-emerald-800/60 hover:bg-emerald-800 rounded-xl text-xs font-semibold backdrop-blur transition flex items-center gap-2">
+                            <i class="fa-solid fa-key"></i> Cambiar PIN
+                        </button>
+                        <button @click="exportData" class="px-4 py-2 bg-emerald-800/60 hover:bg-emerald-800 rounded-xl text-xs font-semibold backdrop-blur transition flex items-center gap-2">
+                            <i class="fa-solid fa-download"></i> Exportar Datos
+                        </button>
+                        <button @click="confirmResetAllData" class="px-4 py-2 bg-rose-600/80 hover:bg-rose-700 rounded-xl text-xs font-semibold transition flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-left"></i> Reiniciar Liga
+                        </button>
+                    </template>
                 </div>
             </div>
 
@@ -49,8 +60,12 @@
                     <span><i class="fa-solid fa-user-tie text-emerald-200"></i> Presidente: <strong class="text-white">{{ board.president || 'No asignado' }}</strong></span>
                     <span><i class="fa-solid fa-file-signature text-emerald-200"></i> Secretario: <strong class="text-white">{{ board.secretary || 'No asignado' }}</strong></span>
                 </div>
-                <div class="text-emerald-200">
-                    <i class="fa-solid fa-gavel"></i> Decisiones de la directiva inapelables
+                <div class="flex items-center gap-3">
+                    <span class="px-2.5 py-0.5 rounded-full font-semibold" :class="isBoardUnlocked ? 'bg-amber-400/20 text-amber-200 border border-amber-300/40' : 'bg-emerald-900/50 text-emerald-100'">
+                        <i class="fa-solid" :class="isBoardUnlocked ? 'fa-pen-to-square' : 'fa-eye'"></i>
+                        {{ isBoardUnlocked ? 'Edición habilitada' : 'Modo consulta (solo lectura)' }}
+                    </span>
+                    <span class="text-emerald-200"><i class="fa-solid fa-gavel"></i> Decisiones de la directiva inapelables</span>
                 </div>
             </div>
         </header>
@@ -149,7 +164,11 @@
                         <h2 class="font-bold text-slate-800 text-lg flex items-center gap-2">
                             <i class="fa-solid fa-table-cells text-emerald-600"></i> Matriz de Resultados (16x16)
                         </h2>
-                        <p class="text-xs text-slate-500">Filas: Equipo Local (Casa) | Columnas: Equipo Visitante (Fuera). Haz clic en una casilla para editar el marcador.</p>
+                        <p class="text-xs text-slate-500">
+                            Filas: Equipo Local (Casa) | Columnas: Equipo Visitante (Fuera).
+                            <span v-if="isBoardUnlocked">Haz clic en una casilla para editar el marcador o el memo.</span>
+                            <span v-else>Activa el <strong>Modo Directiva</strong> para editar marcadores o memos.</span>
+                        </p>
                     </div>
                     <div class="flex items-center gap-3 text-xs">
                         <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-emerald-100 border border-emerald-300 rounded"></span> Victoria Local</span>
@@ -175,8 +194,11 @@
                                 </td>
                                 <td v-for="tCol in teams" :key="'cell-'+tRow.id+'-'+tCol.id" class="p-1 border-r border-slate-200 transition">
                                     <div v-if="tRow.id === tCol.id" class="bg-slate-200 text-slate-400 p-2 font-black rounded select-none">✕</div>
-                                    <button v-else @click="openQuickMatchModal(tRow.id, tCol.id)" :class="getMatrixCellClass(tRow.id, tCol.id)" class="w-full h-full p-2 rounded text-xs transition flex flex-col items-center justify-center gap-0.5 min-h-[48px]">
+                                    <button v-else @click="openQuickMatchModal(tRow.id, tCol.id)" :class="[getMatrixCellClass(tRow.id, tCol.id), !isBoardUnlocked ? 'opacity-90 cursor-default' : '']" class="w-full h-full p-2 rounded text-xs transition flex flex-col items-center justify-center gap-0.5 min-h-[48px]">
                                         <span>{{ getMatrixCellText(tRow.id, tCol.id) }}</span>
+                                        <span v-if="getMatchBetween(tRow.id, tCol.id)?.memo" class="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded font-medium truncate max-w-[90px]" :title="getMatchBetween(tRow.id, tCol.id).memo">
+                                            <i class="fa-solid fa-note-sticky"></i> Memo
+                                        </span>
                                     </button>
                                 </td>
                             </tr>
@@ -229,9 +251,13 @@
                                 </span>
                                 <span v-else class="text-amber-600 font-medium">Pendiente de jugar</span>
                             </div>
+
+                            <div v-if="match.memo" class="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
+                                <strong class="font-semibold"><i class="fa-solid fa-note-sticky"></i> Memo:</strong> {{ match.memo }}
+                            </div>
                         </div>
 
-                        <div class="mt-4 pt-2">
+                        <div v-if="isBoardUnlocked" class="mt-4 pt-2">
                             <button @click="openEditMatchModal(match)" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-pen-to-square"></i> {{ match.played ? 'Modificar Marcador' : 'Anotar Resultado' }}
                             </button>
@@ -243,6 +269,11 @@
 
         <!-- TAB 4: EQUIPOS Y DIRECTIVA -->
         <section v-if="activeTab === 'teams'" class="space-y-6">
+            <div v-if="!isBoardUnlocked" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 flex items-center justify-between gap-4">
+                <span><i class="fa-solid fa-lock"></i> Los campos de la Junta Directiva y las plantillas están protegidos. Activa el <strong>Modo Directiva</strong> para editarlos.</span>
+                <button @click="openPinModal('unlock')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shrink-0">Desbloquear</button>
+            </div>
+
             <!-- Junta Directiva Settings -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
                 <h2 class="font-bold text-slate-800 text-lg flex items-center gap-2 mb-4">
@@ -251,11 +282,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Presidente:</label>
-                        <input v-model="board.president" @change="saveData" type="text" placeholder="Nombre del Presidente" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <input v-model="board.president" @change="saveData" :disabled="!isBoardUnlocked" type="text" placeholder="Nombre del Presidente" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 disabled:text-slate-500">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Secretario:</label>
-                        <input v-model="board.secretary" @change="saveData" type="text" placeholder="Nombre del Secretario" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <input v-model="board.secretary" @change="saveData" :disabled="!isBoardUnlocked" type="text" placeholder="Nombre del Secretario" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 disabled:text-slate-500">
                     </div>
                 </div>
             </div>
@@ -270,21 +301,21 @@
                     <div v-for="team in teams" :key="team.id" class="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-3">
                         <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
                             <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">{{ team.id }}</span>
-                            <input v-model="team.name" @change="saveData" type="text" class="font-bold text-slate-800 bg-transparent border-b border-dashed border-slate-400 focus:border-emerald-600 outline-none text-sm w-full">
+                            <input v-model="team.name" @change="saveData" :disabled="!isBoardUnlocked" type="text" class="font-bold text-slate-800 bg-transparent border-b border-dashed border-slate-400 focus:border-emerald-600 outline-none text-sm w-full disabled:border-transparent disabled:text-slate-700">
                         </div>
 
                         <div class="space-y-1.5 text-xs">
                             <div>
                                 <label class="text-slate-500">Jugador 1:</label>
-                                <input v-model="team.player1" @change="saveData" type="text" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-slate-700 outline-none">
+                                <input v-model="team.player1" @change="saveData" :disabled="!isBoardUnlocked" type="text" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-slate-700 outline-none disabled:bg-slate-100 disabled:text-slate-500">
                             </div>
                             <div>
                                 <label class="text-slate-500">Jugador 2:</label>
-                                <input v-model="team.player2" @change="saveData" type="text" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-slate-700 outline-none">
+                                <input v-model="team.player2" @change="saveData" :disabled="!isBoardUnlocked" type="text" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-slate-700 outline-none disabled:bg-slate-100 disabled:text-slate-500">
                             </div>
                             <div>
                                 <label class="text-slate-500">Jugador 3:</label>
-                                <input v-model="team.player3" @change="saveData" type="text" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-slate-700 outline-none">
+                                <input v-model="team.player3" @change="saveData" :disabled="!isBoardUnlocked" type="text" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-slate-700 outline-none disabled:bg-slate-100 disabled:text-slate-500">
                             </div>
                         </div>
                     </div>
@@ -362,11 +393,11 @@
                     <div class="flex flex-wrap items-center gap-4 mb-4">
                         <div class="flex items-center gap-2">
                             <label class="text-xs font-bold text-slate-700">Coste Total de la Factura (€):</label>
-                            <input v-model.number="dinnerCost" @change="saveData" type="number" min="0" step="0.01" class="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <input v-model.number="dinnerCost" @change="saveData" :disabled="!isBoardUnlocked" type="number" min="0" step="0.01" class="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 disabled:text-slate-500">
                         </div>
                         <div class="flex items-center gap-2">
                             <label class="text-xs font-bold text-slate-700">Precio por Cubierto / Menú (€):</label>
-                            <input v-model.number="menuPrice" @change="saveData" type="number" min="0" step="0.01" class="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <input v-model.number="menuPrice" @change="saveData" :disabled="!isBoardUnlocked" type="number" min="0" step="0.01" class="w-32 px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-slate-100 disabled:text-slate-500">
                         </div>
                     </div>
 
@@ -520,55 +551,39 @@
             </div>
         </div>
 
-        <!-- QUICK MATCH MODAL (From Matrix) -->
-        <div v-if="quickMatchModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
-                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                    <h3 class="font-bold text-slate-800 text-base">Partido: Jornada {{ quickMatchData.match ? quickMatchData.match.round : '' }}</h3>
-                    <button @click="quickMatchModal = false" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+    <!-- PIN MODAL (Directiva Access / Change PIN) -->
+    <div v-if="pinModal.show" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-emerald-600"></i>
+                    {{ pinModal.mode === 'changePin' ? 'Cambiar PIN de Directiva' : 'Acceso Modo Directiva' }}
+                </h3>
+                <button @click="closePinModal" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <p class="text-slate-600 leading-relaxed">
+                    <span v-if="pinModal.mode === 'unlock'">Introduce el PIN de la directiva para habilitar la edición de resultados, memos, equipos y ajustes. (PIN inicial: <strong>1234</strong>)</span>
+                    <span v-else>Define un nuevo código PIN para proteger el modo edición de la directiva.</span>
+                </p>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">
+                        {{ pinModal.mode === 'changePin' ? 'Nuevo PIN:' : 'Código PIN:' }}
+                    </label>
+                    <input v-model="pinModal.inputPin" @keyup.enter="submitPinModal" type="password" placeholder="Ej. 1234" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold tracking-widest focus:ring-2 focus:ring-emerald-500 outline-none">
                 </div>
 
-                <div v-if="quickMatchData.match" class="space-y-3">
-                    <div class="text-xs text-slate-500 font-medium">
-                        Local: <strong>{{ getTeamName(quickMatchData.homeId) }}</strong> vs Visitante: <strong>{{ getTeamName(quickMatchData.awayId) }}</strong>
-                    </div>
+                <p v-if="pinModal.error" class="text-rose-600 font-semibold">{{ pinModal.error }}</p>
+            </div>
 
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Semana de juego:</label>
-                        <input v-model="quickMatchData.match.week" type="text" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs outline-none">
-                    </div>
-
-                    <div class="bg-slate-50 p-3 rounded-xl space-y-2 text-xs">
-                        <div class="flex justify-between font-bold text-slate-800 border-b border-slate-200 pb-1">
-                            <span>Equipos</span>
-                            <span>Set 1</span>
-                            <span>Set 2</span>
-                            <span>Set 3</span>
-                        </div>
-                        <div class="flex justify-between items-center gap-2">
-                            <span class="font-semibold text-slate-700 truncate w-32">{{ getTeamName(quickMatchData.homeId) }}</span>
-                            <input v-model.number="quickMatchData.match.homeSet1" type="number" class="w-14 text-center border rounded p-1 font-bold">
-                            <input v-model.number="quickMatchData.match.homeSet2" type="number" class="w-14 text-center border rounded p-1 font-bold">
-                            <input v-model.number="quickMatchData.match.homeSet3" type="number" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(quickMatchData.match)">
-                        </div>
-                        <div class="flex justify-between items-center gap-2">
-                            <span class="font-semibold text-slate-700 truncate w-32">{{ getTeamName(quickMatchData.awayId) }}</span>
-                            <input v-model.number="quickMatchData.match.awaySet1" type="number" class="w-14 text-center border rounded p-1 font-bold">
-                            <input v-model.number="quickMatchData.match.awaySet2" type="number" class="w-14 text-center border rounded p-1 font-bold">
-                            <input v-model.number="quickMatchData.match.awaySet3" type="number" class="w-14 text-center border rounded p-1 font-bold" :disabled="!requiresThirdSet(quickMatchData.match)">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex gap-2 pt-2">
-                    <button @click="saveQuickMatchModal" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition">
-                        Guardar Marcador
-                    </button>
-                    <button @click="clearMatchResult(quickMatchData.match)" class="px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-xl text-xs font-bold transition">
-                        Borrar
-                    </button>
-                    <button @click="quickMatchModal = false" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition">
+            <div class="flex justify-end gap-2 pt-2">
+                <button @click="closePinModal" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
                     Cancelar
+                </button>
+                <button @click="submitPinModal" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition">
+                    {{ pinModal.mode === 'changePin' ? 'Guardar PIN' : 'Desbloquear' }}
                 </button>
             </div>
         </div>
@@ -614,6 +629,7 @@
                     president: 'Por determinar',
                     secretary: 'Por determinar'
                 },
+                adminPin: '1234',
                 teams: teams,
                 dinnerCost: 600,
                 menuPrice: 30,
@@ -665,6 +681,8 @@
                 return {
                     activeTab: 'standings',
                     board: { president: '', secretary: '' },
+                    adminPin: '1234',
+                    isBoardUnlocked: false,
                     teams: [],
                     matches: [],
                     dinnerCost: 600,
@@ -674,6 +692,12 @@
                     editingMatch: null,
                     quickMatchModal: false,
                     showResetModal: false,
+                    pinModal: {
+                        show: false,
+                        mode: 'unlock',
+                        inputPin: '',
+                        error: ''
+                    },
                     quickMatchData: {
                         homeId: null,
                         awayId: null,
@@ -849,12 +873,65 @@
                 }
             },
             methods: {
+                openPinModal(mode = 'unlock') {
+                    this.pinModal = {
+                        show: true,
+                        mode: mode,
+                        inputPin: '',
+                        error: ''
+                    };
+                },
+                closePinModal() {
+                    this.pinModal.show = false;
+                    this.pinModal.inputPin = '';
+                    this.pinModal.error = '';
+                },
+                submitPinModal() {
+                    const entered = (this.pinModal.inputPin || '').trim();
+                    if (!entered) {
+                        this.pinModal.error = 'Introduce un PIN válido.';
+                        return;
+                    }
+
+                    if (this.pinModal.mode === 'unlock') {
+                        if (entered === String(this.adminPin)) {
+                            this.isBoardUnlocked = true;
+                            this.closePinModal();
+                            this.showToast('Modo Directiva activado', 'success');
+                        } else {
+                            this.pinModal.error = 'PIN incorrecto.';
+                        }
+                    } else if (this.pinModal.mode === 'changePin') {
+                        if (!this.isBoardUnlocked) {
+                            this.pinModal.error = 'Debes tener el Modo Directiva activo para cambiar el PIN.';
+                            return;
+                        }
+                        this.adminPin = entered;
+                        this.saveData();
+                        this.closePinModal();
+                        this.showToast('PIN de la directiva actualizado', 'success');
+                    }
+                },
+                lockBoardMode() {
+                    this.isBoardUnlocked = false;
+                    this.editingMatch = null;
+                    this.quickMatchModal = false;
+                    this.showToast('Modo consulta activado (edición bloqueada)', 'info');
+                },
+                requireBoardAccess() {
+                    if (!this.isBoardUnlocked) {
+                        this.openPinModal('unlock');
+                        return false;
+                    }
+                    return true;
+                },
                 loadData() {
                     const saved = localStorage.getItem('pickleball_league_v2');
                     if (saved) {
                         try {
                             const parsed = JSON.parse(saved);
                             this.board = parsed.board || { president: 'Por determinar', secretary: 'Por determinar' };
+                            this.adminPin = parsed.adminPin ? String(parsed.adminPin) : '1234';
                             this.teams = parsed.teams || createInitialState().teams;
                             this.matches = (parsed.matches || []).map(m => ({ ...m, memo: m.memo || '' }));
                             this.dinnerCost = parsed.dinnerCost || 600;
@@ -869,6 +946,7 @@
                     } else {
                         const init = createInitialState();
                         this.board = init.board;
+                        this.adminPin = init.adminPin;
                         this.teams = init.teams;
                         this.dinnerCost = init.dinnerCost;
                         this.menuPrice = init.menuPrice;
@@ -879,6 +957,7 @@
                 saveData() {
                     const data = {
                         board: this.board,
+                        adminPin: this.adminPin,
                         teams: this.teams,
                         matches: this.matches,
                         dinnerCost: this.dinnerCost,
@@ -891,6 +970,7 @@
                     return t ? t.name : `Equipo ${id}`;
                 },
                 openEditMatchModal(match) {
+                    if (!this.requireBoardAccess()) return;
                     this.editingMatch = JSON.parse(JSON.stringify(match));
                 },
                 closeEditMatchModal() {
@@ -932,6 +1012,7 @@
                     return h1Win !== h2Win;
                 },
                 validateAndSaveMatch(match) {
+                    if (!this.requireBoardAccess()) return;
                     const h1 = match.homeSet1 !== '' && match.homeSet1 !== null ? parseInt(match.homeSet1) : null;
                     const a1 = match.awaySet1 !== '' && match.awaySet1 !== null ? parseInt(match.awaySet1) : null;
                     const h2 = match.homeSet2 !== '' && match.homeSet2 !== null ? parseInt(match.homeSet2) : null;
@@ -1053,6 +1134,7 @@
                     }
                 },
                 openQuickMatchModal(homeId, awayId) {
+                    if (!this.requireBoardAccess()) return;
                     const match = this.getMatchBetween(homeId, awayId);
                     if (!match) return;
 
@@ -1064,12 +1146,14 @@
                     this.quickMatchModal = true;
                 },
                 saveQuickMatchModal() {
+                    if (!this.requireBoardAccess()) return;
                     if (this.quickMatchData.match) {
                         this.validateAndSaveMatch(this.quickMatchData.match);
                         this.quickMatchModal = false;
                     }
                 },
                 clearMatchResult(match) {
+                    if (!this.requireBoardAccess()) return;
                     match.homeSet1 = null;
                     match.awaySet1 = null;
                     match.homeSet2 = null;
@@ -1099,6 +1183,7 @@
                     }, 3000);
                 },
                 confirmResetAllData() {
+                    if (!this.requireBoardAccess()) return;
                     this.showResetModal = true;
                 },
                 resetAllData() {
@@ -1106,6 +1191,7 @@
                     localStorage.removeItem('pickleball_league_v2');
                     const init = createInitialState();
                     this.board = init.board;
+                    this.adminPin = init.adminPin;
                     this.teams = init.teams;
                     this.dinnerCost = init.dinnerCost;
                     this.menuPrice = init.menuPrice;
@@ -1114,6 +1200,7 @@
                     this.showToast('Datos reiniciados por completo', 'warning');
                 },
                 exportData() {
+                    if (!this.requireBoardAccess()) return;
                     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
                         board: this.board,
                         teams: this.teams,
