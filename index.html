@@ -72,7 +72,7 @@ async function saveSettings(){
     const {error:leagueError}=await db.from('league_settings').update(setting).eq('singleton',true);if(leagueError)throw leagueError;
     const {error:linkError}=await db.from('admin_settings').upsert({singleton:true,whatsapp_group_invite_url:groupLink,updated_at:new Date().toISOString()},{onConflict:'singleton'});if(linkError)throw linkError;
     state.settings={...state.settings,...setting};state.adminSettings={...state.adminSettings,whatsapp_group_invite_url:groupLink};closeModal();toast('Ajustes de liga guardados');await load();
-  }catch(err){toast(err.message||'No se pudieron guardar los ajustes');if(btn){btn.disabled=false;btn.textContent='Guardar ajustes';}}
+  }catch(err){const raw=err.message||'No se pudieron guardar los ajustes';const msg=/administrator|organization_bizum_phone|menu_price|schema cache|column/i.test(raw)?'Supabase no reconoce una columna de ajustes (Administrador, Bizum o precio del menú). En el paquete actualizado ejecuta el archivo supabase_reparar_ajustes.sql en SQL Editor, espera unos segundos y vuelve a cargar la página. Detalle: '+raw:raw;toast(msg);if(btn){btn.disabled=false;btn.textContent='Guardar ajustes';}}
 }
 function closeModal(){document.querySelector('#modal').innerHTML='';}
 async function adminLogin(e){e.preventDefault();const f=new FormData(e.target);const {error}=await db.auth.signInWithPassword({email:f.get('email'),password:f.get('password')});if(error)toast(error.message);else{closeModal();toast('Sesión iniciada');}}
